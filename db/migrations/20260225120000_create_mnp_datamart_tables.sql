@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS mnp_request_h (
 );
 
 CREATE INDEX IF NOT EXISTS mnp_request_h_order_number_idx ON mnp_request_h(order_number);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_mnp_request_h_order_ver ON mnp_request_h(order_id, from_date);
 CREATE INDEX IF NOT EXISTS mnp_request_h_order_id_idx ON mnp_request_h(order_id);
 CREATE INDEX IF NOT EXISTS mnp_request_h_request_status_id_idx ON mnp_request_h(request_status_id);
 CREATE INDEX IF NOT EXISTS mnp_request_h_from_date_idx ON mnp_request_h(from_date);
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS req_number (
   change_date  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS ux_req_number_req_msisdn ON req_number(req_id, msisdn);
 CREATE INDEX IF NOT EXISTS req_number_req_id_idx ON req_number(req_id);
 CREATE INDEX IF NOT EXISTS req_number_msisdn_idx ON req_number(msisdn);
 CREATE INDEX IF NOT EXISTS req_number_change_date_idx ON req_number(change_date);
@@ -101,8 +103,16 @@ CREATE INDEX IF NOT EXISTS mnp_raw_request_req_id_idx ON mnp_raw_request(req_id)
 CREATE INDEX IF NOT EXISTS mnp_raw_request_request_time_idx ON mnp_raw_request(request_time);
 CREATE INDEX IF NOT EXISTS mnp_raw_request_change_date_idx ON mnp_raw_request(change_date);
 
+
+CREATE TABLE IF NOT EXISTS etl_state (
+  job_name VARCHAR(64) PRIMARY KEY,
+  watermark TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- +goose Down
 
+DROP TABLE IF EXISTS etl_state;
 DROP TABLE IF EXISTS mnp_raw_request;
 ALTER TABLE req_number DROP CONSTRAINT IF EXISTS req_number_req_id_fk;
 DROP TABLE IF EXISTS req_number;
