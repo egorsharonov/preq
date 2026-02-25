@@ -10,7 +10,7 @@ includes:
   migration: ./tasks/Migration.yaml
 
 vars:
-  SERVICE_NAME: 'mnp-datamart'
+  SERVICE_NAME: 'portin-requests'
 
 tasks:
   default:
@@ -77,5 +77,5 @@ tasks:
   mock:
     deps: [update:check-base-version]
     cmds:
-      - task base:mock:mock
+      - tasl base:mock:mock
     silent: true

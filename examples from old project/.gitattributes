@@ -1,0 +1,5 @@
+generated.go -diff
+*_generated.go -diff
+go.sum -diff
+_enumer.go -diff
+*.go text eol=lf

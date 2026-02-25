@@ -1,0 +1,53 @@
+version: '3'
+
+vars:
+  BASE_MODULE: 'gitlab.services.mts.ru/salsa/go-base/shared-tasks'
+  BASE_VERSION: 'master'  # Версия по умолчанию. Можно указать другую в формате vX.Y.Z
+  TASK_DIR: './tasks/base'
+
+tasks:
+  check-base-version:
+    desc: Проверяет текущую версию базовых задач
+    cmds:
+      - |
+        LOCAL_VERSION=$(grep -E '^# BASE_TASKS_VERSION:' {{.TASK_DIR}}/Taskfile.yaml 2>/dev/null | awk -F':' '{print $2}')
+
+        REMOTE_VERSION=$(go list -m -f '{{`{{.Version}}`}}' {{.BASE_MODULE}}@master 2>/dev/null || echo "")
+        if [ -z "$REMOTE_VERSION" ]; then
+          echo "❗ Не удалось получить удалённую версию"
+          exit 0
+        fi
+
+        if [ -z "$LOCAL_VERSION" ]; then
+          echo "➡️ Локальная версия не найдена (будет скачана {{.BASE_VERSION}})"
+          task update:base-tasks
+        elif [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+          echo "➡️ Доступно обновление: $LOCAL_VERSION -> $REMOTE_VERSION (task update:base-tasks)"
+        fi
+    silent: true
+
+  base-tasks:
+    desc: Обновляет базовые задачи
+    cmds:
+      - go get {{.BASE_MODULE}}@{{.BASE_VERSION}}
+      - |
+        MODULE_PATH=$(go list -f '{{`{{.Dir}}`}}' -m {{.BASE_MODULE}})
+        REMOTE_VERSION=$(go list -m -f '{{`{{.Version}}`}}' {{.BASE_MODULE}}@{{.BASE_VERSION}} 2>/dev/null || echo "")
+
+        rm -rf {{.TASK_DIR}}
+        mkdir -p {{.TASK_DIR}}
+
+        if [ -d "$MODULE_PATH/base" ]; then
+          cp -r "$MODULE_PATH/base/"* {{.TASK_DIR}}/ 2>/dev/null || true
+        fi
+
+        if [ -f {{.TASK_DIR}}/Taskfile.yaml ]; then
+          (echo "# BASE_TASKS_VERSION:${REMOTE_VERSION}"; \
+          sed '/^# BASE_TASKS_VERSION:/d' {{.TASK_DIR}}/Taskfile.yaml) > {{.TASK_DIR}}/.version && mv -f {{.TASK_DIR}}/.version {{.TASK_DIR}}/Taskfile.yaml
+        fi
+
+        chmod -R a+rw {{.TASK_DIR}} 2>/dev/null || true
+
+        echo "✅ Обновлено до ${REMOTE_VERSION}"
+      - go mod tidy
+    silent: true

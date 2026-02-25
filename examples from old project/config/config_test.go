@@ -3,9 +3,10 @@ package config_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"gitlab.services.mts.ru/salsa/mnp-hub/mnp-datamart/config"
+	"gitlab.services.mts.ru/salsa/mnp-hub/portin-requests/config"
 )
 
 func TestGetConnectionString(t *testing.T) {
@@ -35,5 +36,17 @@ func TestGetConnectionString(t *testing.T) {
 		actualWithSchema := cfg.GetAppConnectionString()
 
 		require.Equal(t, expectedWithSchema, actualWithSchema)
+	})
+}
+
+func TestPortInOrdersConfig(t *testing.T) {
+	t.Run("applying default values", func(t *testing.T) {
+		expectedDefaultAllowedStatusCodes := []int{-1, -2, -3, -4, 4, 6, 22}
+
+		cfg := config.PortInOrdersConfig{}
+		cfg.ApplyDefaults()
+
+		require.False(t, cfg.DisableOpenOrdersCheck)
+		assert.Equal(t, expectedDefaultAllowedStatusCodes, cfg.AllowedStatusesForNewOrder)
 	})
 }

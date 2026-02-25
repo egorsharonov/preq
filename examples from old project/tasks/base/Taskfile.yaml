@@ -1,0 +1,72 @@
+# BASE_TASKS_VERSION:v0.0.0-20251030085333-a869878d1252
+version: "3"
+
+includes:
+  test: ./Test.yaml
+  tools: ./Tools.yaml
+  mock: ./Mock.yaml
+
+vars:
+  LAST_COMMIT:
+    sh: git rev-list --abbrev-commit --all --max-count=1
+  TAG:
+    sh: git describe --abbrev=0 --tags {{.LAST_COMMIT}} 2>/dev/null || echo ""
+  VERSION: '{{if .TAG}}{{replace .TAG "v" ""}}{{else}}0.0.0{{end}}-{{.LAST_COMMIT}}'
+  LDFLAGS: "-extldflags=-static -w -s -X main.Version={{.VERSION}}"
+  TAGS: "timetzdata"
+
+tasks:
+  all:
+    desc: clean, generate, lint, test, build. Pass BIN_NAME to specify binary name (e.g. "task all BIN_NAME=name")
+    vars:
+      BIN_NAME: '{{.BIN_NAME}}'
+    cmds:
+      - task: clean
+      - task: mock:config
+      - task: generate
+      - task: lint
+      - task: test:test
+      - task: build
+        vars: { BIN_NAME: '{{.BIN_NAME}}' }
+
+  generate:
+    desc: run go generate on all packages
+    deps: [tools:.check-version]
+    cmds:
+      - echo '# Generating'
+      - go generate -x ./...
+    silent: true
+
+  lint:
+    desc: run golangci-lint
+    deps: [tools:.check-version]
+    cmds:
+      - echo '# Linting'
+      - golangci-lint run -j4 ./...
+    silent: true
+
+  build:
+    desc: build /cmd/main.go. Pass BIN_NAME to specify binary name (e.g. "task build BIN_NAME=name")
+    vars:
+      BIN_NAME: '{{default "base" .BIN_NAME}}'
+    cmds:
+      - echo '# Building binary "{{.BIN_NAME}}"'
+      - |
+        CGO_ENABLED=0 go build -ldflags='{{.LDFLAGS}}' -tags {{.TAGS}} -o bin/{{.BIN_NAME}} ./cmd/main.go
+    silent: true
+
+  clean:
+    desc: clean build and temp files
+    cmds:
+      - echo '# Cleaning'
+      - rm -rf ./bin
+      - rm -rf ./tmp
+    silent: true
+
+  update:
+    desc: update all go modules
+    cmds:
+      - echo "# Updating"
+      - go get -u ./...
+      - go mod tidy
+    silent: true

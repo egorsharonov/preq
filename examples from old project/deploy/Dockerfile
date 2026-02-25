@@ -1,5 +1,6 @@
 FROM dockerhub-mirror.services.mts.ru/golang:1.25 AS builder
 
+# Используется только для CI/CD билда. Потому что Kaniko не умеет задавать secrets.
 ARG CI_JOB_TOKEN
 
 ENV GOPROXY="https://nexus.services.mts.ru/repository/go-proxy/"
@@ -30,9 +31,6 @@ RUN curl -OOOO -XGET http://pki.mts.ru/{root.crt,WinCA.crt,class2rootG2.crt,MTSW
 
 RUN go install github.com/go-task/task/v3/cmd/task@latest
 
-# Install Delve
-RUN go install github.com/go-delve/delve/cmd/dlv@latest
-
 WORKDIR /app
 COPY go.* ./
 RUN  --mount=type=secret,id=ci_job_token,target=/run/secrets/ci_job_token,required=false \
@@ -45,19 +43,19 @@ COPY . .
 RUN  --mount=type=secret,id=ci_job_token,target=/run/secrets/ci_job_token,required=false \
     echo "machine gitlab.services.mts.ru login gitlab-ci-token password $(cat /run/secrets/ci_job_token 2>/dev/null || echo "${CI_JOB_TOKEN}")" > /root/.netrc; \
     chmod 600 /root/.netrc; \
-    go build -gcflags="all=-N -l" -o bin/mnp-datamart ./cmd/main.go; \
+    task build; \
     rm -f /root/.netrc; 
 
 FROM registry.services.mts.ru/docker/alpine:3.22
 
-COPY --from=builder /app/db/migrations /app/db/migrations
-COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
-COPY --from=builder /app/bin/mnp-datamart /app/mnp-datamart
+RUN apk add --no-cache tzdata lftp openssh-client busybox-extras
 
-# HTTP, Delve ports
-EXPOSE 8080 40000
+ENV TZ="Europe/Moscow"
+
+COPY --from=builder /app/db/migrations /app/db/migrations
+COPY --from=builder /app/bin/portin-requests /app/portin-requests
+
+EXPOSE 8080
 
 RUN adduser app --disabled-password --gecos "" && chown app /app -R
 USER app
-
-ENTRYPOINT ["dlv"]

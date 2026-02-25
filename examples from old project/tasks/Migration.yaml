@@ -1,0 +1,30 @@
+version: '3'
+
+tasks:
+  status:
+    cmds:
+      - echo "# Check migrations status"
+      - go run ./cmd/main.go -migration status
+    silent: true
+
+  up:
+    cmds:
+      - echo "# Apply up migrations for PostgreSQL database"
+      - go run ./cmd/main.go -migration up
+    silent: true
+
+  down:
+    cmds:
+      - echo "# Apply down migrations for PostgreSQL database"
+      - go run ./cmd/main.go -migration down
+    silent: true
+
+  down-to:
+    desc: "Rollback migrations down to a specific version"
+    requires:
+      vars:
+        - DOWN_TO_VERSION
+    cmds:
+      - echo "# Apply down migrations for PostgreSQL database (down-to {{.DOWN_TO_VERSION}})"
+      - go run ./cmd/main.go -migration down {{.DOWN_TO_VERSION}}
+    silent: true

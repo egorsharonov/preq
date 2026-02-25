@@ -53,7 +53,7 @@ RUN apk add --no-cache tzdata lftp openssh-client busybox-extras
 ENV TZ="Europe/Moscow"
 
 COPY --from=builder /app/db/migrations /app/db/migrations
-COPY --from=builder /app/bin/portin-requests /app/portin-requests
+COPY --from=builder /app/bin/mnp-datamart /app/mnp-datamart
 
 EXPOSE 8080
 

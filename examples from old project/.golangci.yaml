@@ -83,7 +83,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - gitlab.services.mts.ru/salsa/mnp-hub/mnp-datamart
+        - gitlab.services.mts.ru/salsa/mnp-hub/portin-requests
   exclusions:
     generated: lax
     paths:

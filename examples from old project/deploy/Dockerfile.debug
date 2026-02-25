@@ -45,14 +45,14 @@ COPY . .
 RUN  --mount=type=secret,id=ci_job_token,target=/run/secrets/ci_job_token,required=false \
     echo "machine gitlab.services.mts.ru login gitlab-ci-token password $(cat /run/secrets/ci_job_token 2>/dev/null || echo "${CI_JOB_TOKEN}")" > /root/.netrc; \
     chmod 600 /root/.netrc; \
-    go build -gcflags="all=-N -l" -o bin/mnp-datamart ./cmd/main.go; \
+    go build -gcflags="all=-N -l" -o bin/portin-requests ./cmd/main.go; \
     rm -f /root/.netrc; 
 
 FROM registry.services.mts.ru/docker/alpine:3.22
 
 COPY --from=builder /app/db/migrations /app/db/migrations
 COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
-COPY --from=builder /app/bin/mnp-datamart /app/mnp-datamart
+COPY --from=builder /app/bin/portin-requests /app/portin-requests
 
 # HTTP, Delve ports
 EXPOSE 8080 40000

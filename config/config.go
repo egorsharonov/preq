@@ -4,9 +4,6 @@ import (
 	"fmt"
 
 	appConfig "gitlab.services.mts.ru/salsa/go-base/application/config"
-	"gitlab.services.mts.ru/salsa/go-base/application/validators"
-
-	"gitlab.services.mts.ru/salsa/mnp-hub/portin-requests/internal/model"
 )
 
 type Config struct {
@@ -16,41 +13,6 @@ type Config struct {
 	PortInDB               PostgresConfig        `env:",prefix=MNPPORTIN_PG_" validate:"required"`
 	MigrationsPath         string                `env:"MIGRATIONS_PATH,default=/app/db/migrations"`
 	MigrationsVersionTable string                `env:"MIGRATIONS_VERSION_TABLE" validate:"required"`
-	FTP                    appConfig.FTPConfig   `env:",prefix=FTP_"`
-	MTS                    MTSConfig             `env:",prefix=MTS_"`
-	PortInOrders           PortInOrdersConfig    `env:",prefix=PORTIN_ORDERS_"`
-	Consul                 ConsulConfig          `env:",prefix=CONSUL_"`
-}
-
-func (cfg *Config) ApplyDefaults() {
-	cfg.PortInOrders.ApplyDefaults()
-}
-
-func (cfg *Config) Validate() error {
-	return validators.ValidateStruct(cfg)
-}
-
-type PortInOrdersConfig struct {
-	// DisableOpenOrdersCheck - отключить проверку открытых заявок. Загружается только из Consul.
-	DisableOpenOrdersCheck bool
-	// AllowedStatusesForNewOrder - список статусов, при которых разрешено создание новой заявки. Загружается только из Consul.
-	AllowedStatusesForNewOrder []int
-	// PortationNumbersStatesArgegateMap - Дополнительно для статусов завершения малой портации,
-	// т.к. для каждого номера сообщения приходят отдельно, нужна агрегация c вычислением общего статуса заявки.
-	//
-	// Мап статусов переносимых номеров в множество статусов, в котором должны лежать все номера в заявке,
-	// для применения указанного статуса ко всей заявке и соотвествующий агренированный статус заявки
-	PortationNumbersStatesAgregateMap map[string]model.PortationNumberStateAgregate
-}
-
-func (cfg *PortInOrdersConfig) ApplyDefaults() {
-	if len(cfg.AllowedStatusesForNewOrder) == 0 {
-		cfg.AllowedStatusesForNewOrder = model.GetDefaultAllowedStatusesForNewOrder()
-	}
-
-	if len(cfg.PortationNumbersStatesAgregateMap) == 0 {
-		cfg.PortationNumbersStatesAgregateMap = model.GetDefaultPortationNumbersStatesAgregateMap()
-	}
 }
 
 type PostgresConfig struct {
@@ -88,16 +50,4 @@ func (c *PostgresConfig) GetMigrationConnectionString() string {
 
 type HTTPConfig struct {
 	Port string `env:"PORT" validate:"required"`
-}
-
-type MTSConfig struct {
-	RecipientRN      string `env:"RECIPIENT_RN" validate:"required"`
-	RecipientName    string `env:"RECIPIENT_NAME" validate:"required"`
-	RecipientCdbCode string `env:"RECIPIENT_CDBCODE" validate:"required"`
-}
-
-type ConsulConfig struct {
-	Address string `env:"HTTP_ADDR" validate:"required,http_url"`
-	Token   string `env:"HTTP_TOKEN"`
-	Key     string `env:"KEY" validate:"required"`
 }

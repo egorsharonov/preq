@@ -1,6 +1,6 @@
-# mnp-datamart
+# portin-requests
 
-Сервис для выгрузки заявок из БД и передачи их в витрины.
+Сервис обработки входящих заявок на портацию (PortIn)
 
 [US01.AV](https://confluence.mts.ru/pages/viewpage.action?pageId=1724031378)
 
@@ -20,7 +20,7 @@
 
 ## Сборка
 
-Используемая версия Go: **1.25.7**
+Используемая версия Go: **1.25.7**  
 
 ### Taskfile
 
@@ -43,11 +43,11 @@
 `task test-cover` - запуск тестов с анализом покрытия  
 `task migration:status` - проверка статуса применения миграций  
 `task migration:up` - применение всех доступных миграций  
-`task migration:down` - откат до предыдущей версии
+`task migration:down` - откат до предыдущей версии  
 
 В качестве линтера используется `golangci-lint`
 
-Для VS Code есть [расширение](https://marketplace.visualstudio.com/items?itemName=task.vscode-task) для отображения списка задач и их запуска.
+Для VS Code есть [расширение](https://marketplace.visualstudio.com/items?itemName=task.vscode-task) для отображения списка задач и их запуска.  
 
 ### Описание переменных окружения проекта
 
@@ -76,7 +76,7 @@
 ### Скачивание зависимостей из GitLab MTS
 
 Для подтягивания зависимостей из корп. гитлаба нужно настроить файл .netrc.
-На  Windows файл назвать **_netrc** и положить в папку %USERPROFILE%
+На  Windows файл назвать **_netrc** и положить в папку %USERPROFILE%  
 
 Сгенерировать токен GitLab со скоупом **api** [тут](https://gitlab.services.mts.ru/-/profile/personal_access_tokens)
 
@@ -84,52 +84,60 @@
 
 > machine gitlab.services.mts.ru  
 login \*логин\*  
-password \*API-токен\*
+password \*API-токен\*  
 
 ## Флаги запуска
-1. Без указания флагов запускается основной сервис mnp-datamart.
+1. Без указания флагов запускается основной сервис portin-requests.
 2. **-help (-h)**
-   Вызов справки с описанием флагов и их аргументов: ```mnp-datamart -h```.
+    Вызов справки с описанием флагов и их аргументов: ```portin-requests -h```.
 3. **-migration [args]**  
-   Флаг для применения миграций PostgreSQL. Требует установки [переменных окружения](#переменные-окружения) с настройками БД и пути до директории с файлами миграций.
+    Флаг для применения миграций PostgreSQL. Требует установки [переменных окружения](#переменные-окружения) с настройками БД и пути до директории с файлами миграций.
 
-   Для работы с миграциями используется библиотека [goose](https://github.com/pressly/goose). Для ее корректной работы в `.sql` скриптах миграций требуется использовать определенные [атрибуты](https://github.com/pressly/goose?tab=readme-ov-file#sql-migrations).
+    Для работы с миграциями используется библиотека [goose](https://github.com/pressly/goose). Для ее корректной работы в `.sql` скриптах миграций требуется использовать определенные [атрибуты](https://github.com/pressly/goose?tab=readme-ov-file#sql-migrations).
 
-   Принимает следующие аргументы:
+    Принимает следующие аргументы:
 
     - status - проверка текущего статуса применения миграций, вывод информации через стандартный логгер;
 
     - up [version] - "накатывание" миграций. В SQL такие миграции помечаются аннотацией `--+goose Up`. Например:
-        - ```mnp-datamart -migration up``` - применение **всех** доступных миграций;
-        - ```mnp-datamart -migration up 20250422124556``` - "накатить" миграций до указанной версии.
+        - ```portin-requests -migration up``` - применение **всех** доступных миграций;
+        - ```portin-requests -migration up 20250422124556``` - "накатить" миграций до указанной версии.
 
     - up-by-one - "накатывание" только следующей миграции:
-        - ```mnp-datamart -migration up-by-one```
+        - ```portin-requests -migration up-by-one```
 
     - down [version] - откат миграций. В SQL такие миграции помечаются аннотацией `--+goose Down`. Например:
-        - ```mnp-datamart -migration down``` - "откатить" до **предыдущей** версии;
-        - ```mnp-datamart -migration down 20250422124556``` - "откатить" миграции до указанной версии.
+        - ```portin-requests -migration down``` - "откатить" до **предыдущей** версии;
+        - ```portin-requests -migration down 20250422124556``` - "откатить" миграции до указанной версии.
     - ⚠️ down-all -  откат **ВСЕХ** миграций (до версии 0):
-        - ```mnp-datamart -migration down-all```
+        - ```portin-requests -migration down-all```
 
-   Пример вызова из Docker:
+    Пример вызова из Docker:
     ```shell
-    /app/mnp-datamart -migration up
+    /app/portin-requests -migration up
     ```
 
-   Локально можно запустить миграции командами из Makefile: ```make migration-up```, ```make migration-down``` (аналогично запуску без указания версии).  
-   Для локального запуска нужно настроить [переменные окружения](#переменные-окружения), пример есть в local-debug.
+    Локально можно запустить миграции командами из Makefile: ```make migration-up```, ```make migration-down``` (аналогично запуску без указания версии).  
+    Для локального запуска нужно настроить [переменные окружения](#переменные-окружения), пример есть в local-debug.
 
 ## Переменные окружения
-- [Локальный запуск](https://gitlab.services.mts.ru/salsa/mnp-hub/local-debug/-/blob/master/config/mnp-datamart)
-- [develop](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/develop/mnp-datamart/envs)
-- [pre-production](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/pre-production/mnp-datamart/envs)
-- [prod0000s7](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/prod0000s7/mnp-datamart/envs)
-- [prod0300s3](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/prod0300s3/mnp-datamart/envs)
+- [Локальный запуск](https://gitlab.services.mts.ru/salsa/mnp-hub/local-debug/-/blob/master/config/portin-requests)
+- [develop](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/develop/portin-requests/envs)
+- [pre-production](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/pre-production/portin-requests/envs)
+- [prod0000s7](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/prod0000s7/portin-requests/envs)
+- [prod0300s3](https://gitlab.services.mts.ru/salsa/mnp-hub/kubernetes/-/tree/master/prod0300s3/portin-requests/envs)
+
+## Consul Configuration
+
+Сервис использует Consul для централизованного управления конфигурацией. Некоторые настройки загружаются **исключительно из Consul** и не могут быть переопределены через переменные окружения.
+
+Подробная инструкция по настройке Consul доступна в [CONSUL_SETUP.md](CONSUL_SETUP.md)
+
+**Важно:** Приложение не запустится без корректной конфигурации в Consul!
 
 ## Публикация новой версии на pre-production, production стенды
 Для публикации новой версии каждого сервиса необходимо после внесения исправлений:
-1. Создать новый тег в репозитории сервиса увеличив номер версии https://gitlab.services.mts.ru/salsa/mnp-hub/mnp-datamart/-/tags
+&ensp;1. Создать новый тег в репозитории сервиса увеличив номер версии https://gitlab.services.mts.ru/salsa/mnp-hub/portin-requests/-/tags
 
 ### Нумерация версий
 Номер версии формируется в формате vXX.YY.ZZ
