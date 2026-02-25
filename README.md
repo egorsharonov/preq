@@ -136,3 +136,30 @@ password \*API-токен\*
 где ZZ - номер сборки в спринте, YY - условный номер спринта
 
 Команда разработки Email: МТС ИТ MNP HUB mailto:mnphub@mts.ru
+
+## Архитектура mnp-datamart (MNP HUB)
+
+Сервис запускает две ETL-джобы:
+- `portin-dag` — перенос заявок `orders`, истории `orders_log` и номеров `portationNumbers` в `mnp_request`, `mnp_request_h`, `req_number`.
+- `cdb-message-dag` — перенос `mnp_message` + `mnp_process` в `mnp_raw_request`.
+
+Джобы работают по расписанию (по умолчанию ежечасно) и могут быть вызваны вручную:
+- `POST /jobs/portin/run`
+- `POST /jobs/cdb-message/run`
+
+Health endpoints:
+- `GET /health/live`
+- `GET /health/ready`
+
+Ключевые правила:
+- Загружается только `order_type='portin'` и только физлица (`subscriber_type=Person`).
+- В `mnp_request` используется upsert (`order_number`).
+- В `mnp_request_h` используется idempotent insert (`order_id, from_date`).
+- В `req_number` используется upsert (`req_id, msisdn`).
+- В `mnp_raw_request` используется upsert (`id`).
+- Мэппинг статусов выполняется на стороне mnp-datamart.
+- `reject_reason` заполняется только первым числовым кодом.
+
+### Контракт с DataHouse по техполям
+
+`mnp-datamart-db` хранит бизнес-данные витрины. Технические поля DataHouse (`raw_dt`, `raw_ts`, `processed_dttm`, `etl_run_id` и т.п.) заполняются downstream ETL-процессами DataHouse (RDB2HADOOP/Airflow).
