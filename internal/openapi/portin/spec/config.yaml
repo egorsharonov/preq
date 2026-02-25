@@ -1,0 +1,7 @@
+package: portin
+output: server_gen.go
+generate:
+  chi-server: true
+  embedded-spec: true
+  strict-server: true
+  models: true

@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+vars:
+  GO_TEST_PATH: ./...
+  GO_TEST_PATH_EXCLUDE_REGEX: ".*/(extwsdl|mocks|openapi)$"
+  GO_TEST_OPTIONS: "-covermode atomic -v"
+  RESULTS_DIR: ./tmp/test_results
+
+tasks:
+  test:
+    desc: Run tests and save raw results
+    cmds:
+      - mkdir -p {{.RESULTS_DIR}}
+      - >
+        go test {{.GO_TEST_OPTIONS}}
+        $(go list {{.GO_TEST_PATH}} | grep -v -E '{{.GO_TEST_PATH_EXCLUDE_REGEX}}')
+        | tee {{.RESULTS_DIR}}/result.txt
+      - go tool test2json -t < {{.RESULTS_DIR}}/result.txt > {{.RESULTS_DIR}}/result.json
+    silent: true
+
+  coverage:
+    desc: Run coverage
+    cmds:
+      - mkdir -p {{.RESULTS_DIR}}/coverage
+      - >
+        go test {{.GO_TEST_OPTIONS}} -coverprofile {{.RESULTS_DIR}}/coverage/cover.out
+        $(go list {{.GO_TEST_PATH}} | grep -v -E '{{.GO_TEST_PATH_EXCLUDE_REGEX}}')
+      - go tool cover -func={{.RESULTS_DIR}}/coverage/cover.out -o {{.RESULTS_DIR}}/coverage/coverage.txt
+      - go tool cover -html={{.RESULTS_DIR}}/coverage/cover.out -o {{.RESULTS_DIR}}/coverage/coverage.html
+      - task: coverage-html
+    silent: true
+
+  coverage-html: go tool cover -html={{.RESULTS_DIR}}/coverage/cover.out

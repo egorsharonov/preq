@@ -1,0 +1,15 @@
+.vscode
+.idea
+vendor/
+**/bin/
+.gitignore
+**/.dockerignore
+**/Dockerfile*
+**/docker-compose*
+**/compose*
+**/.env*
+*.exe
+*.log
+*.tmp
+**/tmp/
+README.md

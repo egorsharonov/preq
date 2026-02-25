@@ -1,0 +1,81 @@
+version: '3'
+
+dotenv: ['.env']
+
+includes:
+  update: ./tasks/Update.yaml
+  base:
+    taskfile: ./tasks/base/Taskfile.yaml
+    optional: true
+  migration: ./tasks/Migration.yaml
+
+vars:
+  SERVICE_NAME: 'portin-requests'
+
+tasks:
+  default:
+    desc: Обновляет задачи и отображает их список (запускается, если написать `task`)
+    cmds:
+      - task: update:base-tasks
+      - task --list
+    silent: true
+
+  all:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:all BIN_NAME='{{.SERVICE_NAME}}'
+    silent: true
+
+  generate:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:generate
+    silent: true
+
+  lint:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:lint
+    silent: true
+
+  build:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:build BIN_NAME='{{.SERVICE_NAME}}'
+    silent: true
+
+  clean:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:clean
+    silent: true
+
+  update:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:update
+    silent: true
+
+  test:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:test:test
+    silent: true
+
+  test-cover:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:test:coverage
+    silent: true
+
+  mock-config:
+    deps: [update:check-base-version]
+    cmds:
+      - task base:mock:config
+    silent: true
+
+  mock:
+    deps: [update:check-base-version]
+    cmds:
+      - tasl base:mock:mock
+    silent: true

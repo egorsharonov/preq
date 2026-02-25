@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+includes:
+  tools: ./Tools.yaml
+
+vars:
+  MOCKERY_TEMPLATE: .mockery.template
+  MOCKERY_CONFIG: .mockery.yml
+  GO_MOCK_PATH: ./...
+  EXTWSDL_MOCK_CONFIG: |
+    config:
+          all: true
+          recursive: false
+          include-auto-generated: true
+  OPENAPI_MOCK_CONFIG: |
+    config:
+          recursive: false
+          include-auto-generated: true
+        interfaces:
+          ClientWithResponsesInterface:
+
+tasks:
+  mock:
+    desc: Generate mocks with mockery
+    deps: [tools:.check-version]
+    cmds:
+      - mockery
+    silent: true
+
+  config:
+    desc: Generate .mockery.yml config
+    cmds:
+      - cp {{.MOCKERY_TEMPLATE}} {{.MOCKERY_CONFIG}} && echo "" >> {{.MOCKERY_CONFIG}} 
+      - task: gen-config
+        vars: {
+          MOCK_TYPE: 'Extwsdl soap clients',
+          INCLUDE_REGEX: '.*/extwsdl$',
+          MOCK_CONFIG: '{{.EXTWSDL_MOCK_CONFIG}}'
+        }
+      - task: gen-config
+        vars: {
+          MOCK_TYPE: 'Openapi http clients',
+          INCLUDE_REGEX: '.*/openapi$',
+          MOCK_CONFIG: '{{.OPENAPI_MOCK_CONFIG}}'
+        }
+      - echo "# Custom mocks" >> {{.MOCKERY_CONFIG}}
+    silent: true
+
+  gen-config:
+    internal: true
+    vars:
+      MOCK_TYPE: '{{.MOCK_TYPE}}'
+      INCLUDE_REGEX: '{{.INCLUDE_REGEX}}'
+      MOCK_CONFIG: '{{.MOCK_CONFIG}}'
+    cmds:
+      - |
+        INCLUDE_PACKAGES=$(go list {{.GO_MOCK_PATH}} | grep '{{.INCLUDE_REGEX}}' || true)
+
+        if [ -n "$INCLUDE_PACKAGES" ]; then
+          echo "# {{.MOCK_TYPE}}" >> {{.MOCKERY_CONFIG}}
+           for package in $INCLUDE_PACKAGES; do
+            printf "  %s:\n" "$package"
+            printf "    %s\n" "{{.MOCK_CONFIG}}"
+          done
+        fi >> {{.MOCKERY_CONFIG}}
+    silent: true

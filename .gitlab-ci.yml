@@ -1,0 +1,39 @@
+include:
+  - project: "${CI_TOOLS_PROJECT}"
+    ref: "${CI_TOOLS_PROJECT_BRANCH}"
+    file: "${CI_TOOLS_PROJECT_FILE_GO}"
+
+default:
+  tags:
+    - ocean
+    - client
+
+dedust-scan-develop:
+  variables:
+  # вписать базовый URL для сканирования API
+      DEDUST_SCANNERING_INSTANCE_URL: https://portin-orders.mnp-dev.mts-corp.ru/
+  # min - от 15 минут, max - от часа и большое
+      DEDUST_AGGRESSIVE: min
+  # вписать имя для отображения в меню "Разработка"
+      APPSECHUB_INSTANCE_NAME: portin-requests-api-develop
+  # вписать базовый URL для сканирования API
+      APPSECHUB_INSTANCE_URL: https://portin-orders.mnp-dev.mts-corp.ru/
+  # PROD - прод, STG - все, что не прод
+      APPSECHUB_INSTANCE_STAGE: STG
+  # путь (в репозитории) к файлу со спецификацией в формате OpenAPI JSON
+  #    DEDUST_OAS_FILE_PATH: internal/openapi/serviceorder/serviceorder.yaml
+      DEDUST_OAS_GET_URL: https://portin-orders.mnp-dev.mts-corp.ru/swagger/swagger.json
+  stage: dedust
+  needs:
+    - !reference [.dedust_scan_develop_rules, needs]
+  rules:
+    - !reference [.dedust_scan_develop_rules, rules]
+  trigger:
+    include:
+    - project: $DEDUST_PIPELINE_PROJECT
+      file: 'dedust_scan.yml'
+      ref: 'main'
+    strategy: depend
+    forward:
+      pipeline_variables: true
+      yaml_variables: true

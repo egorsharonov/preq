@@ -1,0 +1,11 @@
+{
+    "files.eol": "\n",
+    "go.lintTool": "golangci-lint",
+    "go.useLanguageServer": true,
+    "go.formatTool": "goimports",
+    "gopls": {
+        "formatting.local": "gitlab.services.mts.ru/salsa/mnp-hub/portin-requests"
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modifications",
+}

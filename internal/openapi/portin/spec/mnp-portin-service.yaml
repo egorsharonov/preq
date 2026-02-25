@@ -1,0 +1,1615 @@
+---
+openapi: 3.0.2
+info:
+  title: mnp-portin-service 1.0.0
+  version: 1.0.0
+  description: Сервис управления заявками MNP PortIn по переносу мобильного номера
+    в сеть МТС
+paths:
+  /mnphub/ordering/v1/portInOrders:
+    summary: Заявки PortIn
+    get:
+      tags:
+      - portin-orders
+      parameters:
+      - name: portnumber
+        description: Портируемый номер телефона
+        schema:
+          $ref: '#/components/schemas/Phone'
+        in: query
+      - name: tempnumber
+        description: Временный номер телефона
+        schema:
+          $ref: '#/components/schemas/Phone'
+        in: query
+      - name: cdbProcessId
+        description: Поиск по идентификатору процесса БДПН
+        schema:
+          $ref: '#/components/schemas/CdbProcessId'
+        in: query
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PortInOrderResponse'
+          description: "Если заявка успешно найдена, возвращается полная информаци\
+            я по ней"
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetPortInOrders
+      summary: Поиск заявок PortIn по параметрам
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortInOrderPostRequest'
+        required: true
+      tags:
+      - portin-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MnpOrderRef'
+              examples:
+                Заявка создана:
+                  value:
+                    id: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+                    state:
+                      code: CREATED
+          description: При успешном создании заявки возвращается ее идентификатор
+            и статус (поля отмеченные обязательными в классе MnpPortInResponse)
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Requet
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: CreatePortInOrder
+      summary: Создание новой заявки PortIn и запуск процесса переноса
+    parameters:
+    - name: x-caller
+      description: "Вызывающая система, которая выполняет запрос в текущий момент"
+      schema:
+        type: string
+      in: header
+    - name: x-mts-user
+      description: "Доменное NTLM-имя оператора сервиса, под котором идет обращени\
+        е"
+      schema:
+        type: string
+      in: header
+  /mnphub/ordering/v1/portInOrders/{id}:
+    summary: Заявка PortIn по ее идентификатору
+    get:
+      tags:
+      - portin-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortInOrderResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetPortInOrder
+      summary: Запрос заявки PortIn по ее id
+    parameters:
+    - name: id
+      description: идентификатор заявки PortInOrder
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: x-caller
+      description: "Вызывающая система, которая выполняет запрос в текущий момент"
+      schema:
+        type: string
+      in: header
+    - name: x-mts-user
+      description: "Доменное NTLM-имя оператора сервиса, под котором идет обращени\
+        е"
+      schema:
+        type: string
+      in: header
+  /mnphub/ordering/v1/portInOrders/{id}/duedateOrders:
+    summary: Дата портации для заявки PortIn по ее id
+    get:
+      tags:
+      - portin-duedate-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DueDateOrderResponse'
+          description: ОК
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetDueDateOrdersByPortInID
+      summary: Получение заявок на изменение даты переноса
+      description: "Запрос всех дочерних заявок на изменение даты переноса для род\
+        ительской заявки PortInOrder с идентификатором, переданным в пути запроса."
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DueDateOrderRequest'
+      tags:
+      - portin-duedate-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DueDateOrderResponse'
+          description: Заявка успешно создана
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: На указанную дату нельзя назначить перенос номера
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: CreateDueDateOrder
+      summary: Запрос изменение даты портации
+      description: "Создание новой дочерней заявки на изменение даты переноса номе\
+        ра для родительской заявки PortInOrder по id в пути запроса. В теле запрос\
+        а необходимо передать новую дату портации в формате со смещением. А также\
+        , опционально, передать ссылку на документ заявления на изменение даты пер\
+        еноса от клиента."
+    parameters:
+    - name: id
+      description: Идентификатор родительской заявки PortInOrder
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: x-caller
+      description: "Вызывающая система, которая выполняет запрос в текущий момент"
+      schema:
+        type: string
+      in: header
+    - name: x-mts-user
+      description: "Доменное NTLM-имя оператора сервиса, под котором идет обращени\
+        е"
+      schema:
+        type: string
+      in: header
+  /mnphub/ordering/v1/portInOrders/{id}/cancelOrders:
+    get:
+      tags:
+      - portin-cancel-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortInCancelOrderResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetCancelOrdersByPortInID
+      summary: Получить все заявки на отмену
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortInCancelOrderPostRequest'
+        required: true
+      tags:
+      - portin-cancel-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MnpOrderRef'
+          description: Заявка на отмену создана
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Requet
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: CreateCancelOrder
+      summary: Создание новой заявки на отмену процесса портации по желанию клиента
+    parameters:
+    - name: id
+      description: Идлентификтаор заявки PortInOrder
+      schema:
+        type: string
+      in: path
+      required: true
+    - name: x-caller
+      description: "Вызывающая система, которая выполняет запрос в текущий момент"
+      schema:
+        type: string
+      in: header
+    - name: x-mts-user
+      description: "Доменное NTLM-имя оператора сервиса, под котором идет обращени\
+        е"
+      schema:
+        type: string
+      in: header
+  /mnphub/ordering/v1/portInOrders/cancelOrders/{id}:
+    get:
+      tags:
+      - portin-cancel-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortInCancelOrder'
+          description: Заявка найдена
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetCancelOrder
+      summary: Получение данных заявки на отмену портации
+    parameters:
+    - name: id
+      description: Идлентификтаор заявки на отмену PortInCanelOrder
+      schema:
+        type: string
+      in: path
+      required: true
+  /mnphub/ordering/v1/portInOrders/duedateOrders/{id}:
+    get:
+      tags:
+      - portin-duedate-orders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DueDateOrder'
+          description: Заявка найдена
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: GetDueDateOrder
+      summary: Получение данных заявки на изменение даты переноса
+    parameters:
+    - name: id
+      description: Идлентификтаор заявки на изменение даты переноса DueDateOrder
+      schema:
+        type: string
+      in: path
+      required: true
+  /mnphub/ordering/v1/portInOrders/{id}/checkDuedateChange:
+    get:
+      tags:
+      - portin-duedate-orders
+      parameters:
+      - name: duedate
+        description: |
+          Новая желаемая дата переноса в формате ISO 8601 YYYY-MM-DDThh:mm<TZDSuffix>. Если смещение не указано, то будет применен часовой пояс Москвы +3.
+        schema:
+          format: date-time
+          type: string
+        in: query
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDuedateChangeResponse'
+          description: Изменения даты переноса разрешено
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Заявка переноса номера не найдена
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckDuedateChangeResponse'
+          description: На указанную дату нельзя назначить перенос номера
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      operationId: CheckDueDateChangeByPortInID
+      summary: Проверка возможности изменения даты переноса для заявки PortIn
+    parameters:
+    - name: id
+      description: Идентификатор заявки PortInOrder
+      schema:
+        type: string
+      in: path
+      required: true
+components:
+  schemas:
+    PortInOrder:
+      description: Заявка переноса мобильного номера клиента в сеть оператора-реципиента
+        из сети опреатора-донора
+      required:
+      - id
+      - portationNumbers
+      type: object
+      properties:
+        id:
+          description: "Идентификатор заказа. Уникальный для всех заявок этого тип\
+            а\r\n\r\nГенерируется при создании новой заявки PortIn"
+          maxLength: 45
+          minLength: 1
+          type: string
+          example: ""
+        source:
+          description: "Источник создания заявки, сообщенный при ее создании"
+          maxLength: 50
+          type: string
+          example: EP
+        dueDate:
+          format: date-time
+          description: Запланированная дата переноса номера. Дата-время в ISO-8601
+          type: string
+          example: 2025-03-15T12:00:00.000Z
+        comment:
+          description: Текстовый комментарий
+          maxLength: 255
+          type: string
+        portationNumbers:
+          description: "Список портируемых номеров в заявке. Каждый портируемый но\
+            мер связан с аккаунтом в Telco, указывающим на сим карту и временный н\
+            омер"
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+        donor:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора-донора, включая регион нахождения номера"
+        recipient:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора реципиента, включая регион портации"
+        person:
+          $ref: '#/components/schemas/Person'
+          description: Данные клиента физ. лица
+        company:
+          $ref: '#/components/schemas/Company'
+          description: Данные клиента юр. лица
+        government:
+          $ref: '#/components/schemas/Government'
+          description: "Данные клиента, правительственной организации"
+        contract:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: Данные заявления на портацию
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: Состояние заявки
+        cdbProcessId:
+          $ref: '#/components/schemas/CdbProcessId'
+          description: Идентификатор процесса в ЦБДПН
+          example: "1000000080429769"
+        individual:
+          $ref: '#/components/schemas/Individual'
+          description: Данные клиента ИП
+        processType:
+          description: |-
+            Тип процесса переноса номера:
+            ShortTimePort - Процесс, предусматривающий сроки этапов портации для физ. лица. Может применяться как для физ. лиц, так и для ИП и юр. лиц с ограничением епо количеству номеров в одной заявке.
+            LongTimePort - Процесс, предусматривающий сроки этапов портации для юр лиц. Может применяться для юр лиц.
+            GOS - Процесс, предусматривающий сроки этапов портации для гос. контрактов. Может применяться только для гос. контрактов
+          default: ShortTimePort
+          enum:
+          - ShortTimePort
+          - LongTimePort
+          - GOS
+          type: string
+    PortationNumber:
+      description: Портируемый номер
+      required:
+      - msisdn
+      - telcoAccount
+      type: object
+      properties:
+        msisdn:
+          $ref: '#/components/schemas/Phone'
+          description: Портируемый номер
+        telcoAccount:
+          $ref: '#/components/schemas/TelcoAccountRef'
+          description: "ссылка на телеком аккаунт с сим-картой и временным номером\
+            .\r\nМожет быть идентификатором ПО в FORIS на транзитивный период"
+        status:
+          $ref: '#/components/schemas/OrderState'
+          description: Статус текущего этапа портации
+    TelcoAccountRef:
+      description: Ссылка на телеком аккаунт
+      type: object
+      properties:
+        id:
+          description: Идентификатор телеком аккаунта
+          maxLength: 50
+          type: string
+        msisdn:
+          $ref: '#/components/schemas/Phone'
+          description: "Номер телефона телеком аккаунта, используемый как временны\
+            й номер на период портации"
+    Operator:
+      description: Региональный оператор подвижной связи
+      required:
+      - rn
+      type: object
+      properties:
+        rn:
+          description: Маршрутный номер оператора
+          maxLength: 5
+          minLength: 1
+          type: string
+        mnc:
+          description: MNC код оператора
+          maxLength: 5
+          type: string
+        name:
+          description: Название оператора
+          maxLength: 125
+          type: string
+        region:
+          $ref: '#/components/schemas/Region'
+          description: Регион оператора
+        networkOperator:
+          description: Ссылка на Network Operator в Telco.ROI
+          maxLength: 50
+          type: string
+        cdbCode:
+          description: Кодовое название оператора в ЦБДПН
+          maxLength: 50
+          type: string
+    Region:
+      description: Регион
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          description: Код субъекта РФ
+          maxLength: 3
+          minLength: 1
+          type: string
+        kladr:
+          description: КЛАДР региона
+          maxLength: 50
+          type: string
+        name:
+          description: Название региона
+          maxLength: 125
+          type: string
+    Person:
+      description: Данные клиента физического лица
+      required:
+      - firstName
+      - lastName
+      - idDocuments
+      type: object
+      properties:
+        firstName:
+          description: Имя
+          maxLength: 50
+          minLength: 1
+          type: string
+        lastName:
+          description: Фамилия
+          maxLength: 50
+          minLength: 1
+          type: string
+        middleName:
+          description: Отчество
+          maxLength: 50
+          type: string
+        legalCategory:
+          description: Статус резидент/нерезидент
+          maxLength: 50
+          type: string
+        customer:
+          $ref: '#/components/schemas/PartyRef'
+          description: Сслыка на клиента МТС
+        idDocuments:
+          description: Список идентификационных документов клиента
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/IdDocument'
+        numbers:
+          description: "Список абонентских номеров,\r\nассоциированных с текущим о\
+            бъектом\r\nперсональных данных. Каждый номер –\r\nстрока в формате с к\
+            одом страны 71234567890"
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+    IdDocument:
+      description: Документ удостоверения личности
+      required:
+      - docNumber
+      type: object
+      properties:
+        docName:
+          description: Название удостоверяющего документа
+          maxLength: 50
+          type: string
+        docSeries:
+          description: серия
+          maxLength: 20
+          type: string
+        docNumber:
+          description: номер
+          maxLength: 20
+          minLength: 1
+          type: string
+        documentUrl:
+          description: 'путь к скан-копии '
+          maxLength: 255
+          type: string
+        docType:
+          description: Тип документа
+          maxLength: 50
+          type: string
+    Company:
+      description: Данные клиента юридического лица
+      required:
+      - name
+      - inn
+      type: object
+      properties:
+        name:
+          description: название компании
+          maxLength: 50
+          minLength: 1
+          type: string
+        inn:
+          description: ИНН компании
+          maxLength: 20
+          minLength: 1
+          type: string
+        customer:
+          $ref: '#/components/schemas/PartyRef'
+          description: Сслыка на клиента МТС
+        idDocuments:
+          description: документы организации
+          type: array
+          items:
+            $ref: '#/components/schemas/IdDocument'
+        numbers:
+          description: "Список абонентских номеров,\r\nассоциированных с текущим о\
+            бъектом\r\nперсональных данных. Каждый номер –\r\nстрока в формате с к\
+            одом страны 71234567890"
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+        authorizedPerson:
+          $ref: '#/components/schemas/AuthorizedPerson'
+          description: Представитель юридического лица
+    PartyRef:
+      description: Ссылка на клиента МТС
+      required:
+      - id
+      type: object
+      properties:
+        id:
+          description: Идентификатор клиента в экосистеме МТС
+          maxLength: 50
+          minLength: 1
+          type: string
+    Government:
+      description: Данные клиента - правительственной организации
+      required:
+      - name
+      - inn
+      type: object
+      properties:
+        name:
+          description: название компании
+          maxLength: 125
+          minLength: 1
+          type: string
+        inn:
+          description: ИНН компании
+          maxLength: 12
+          minLength: 1
+          type: string
+        customer:
+          $ref: '#/components/schemas/PartyRef'
+          description: Сслыка на клиента МТС
+        idDocuments:
+          description: документы организации
+          type: array
+          items:
+            $ref: '#/components/schemas/IdDocument'
+        tenderId:
+          description: идентификатор тендера
+          maxLength: 125
+          type: string
+        tradingFloor:
+          description: Тендерная площадка
+          maxLength: 125
+          type: string
+        contractDueDate:
+          format: date-time
+          description: Дата переноса по контракту тендера. Дата-время в ISO-8601
+          type: string
+        numbers:
+          description: "Список абонентских номеров,\r\nассоциированных с текущим о\
+            бъектом\r\nперсональных данных. Каждый номер –\r\nстрока в формате с к\
+            одом страны 71234567890"
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+        authorizedPerson:
+          $ref: '#/components/schemas/AuthorizedPerson'
+          description: Представитель юридического лица
+    AuthorizedPerson:
+      description: Данные представителя юр. лица
+      required:
+      - firstName
+      - lastName
+      type: object
+      properties:
+        firstName:
+          description: Имя
+          maxLength: 50
+          minLength: 1
+          type: string
+        lastName:
+          description: Фамилия
+          maxLength: 50
+          minLength: 1
+          type: string
+        middleName:
+          description: Отчество
+          maxLength: 50
+          type: string
+        position:
+          description: Должность представителя.
+          maxLength: 50
+          type: string
+    MnpDocumentRef:
+      description: Ссылка на подписанный документ заявление на перенос номера
+      required:
+      - documentUrl
+      type: object
+      properties:
+        id:
+          description: Идентификатор документа в системе документооборота
+          maxLength: 50
+          type: string
+        documentDate:
+          format: date-time
+          description: Дата подписания заявления
+          type: string
+        documentUrl:
+          description: URL файла заявления
+          maxLength: 255
+          minLength: 1
+          type: string
+    OrderState:
+      description: Состояние заявки
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          description: Код статуса
+          maxLength: 50
+          minLength: 1
+          type: string
+        message:
+          description: Сообщение причины статуса
+          maxLength: 125
+          type: string
+        statusDate:
+          format: date-time
+          description: Дата установки статуса
+          type: string
+        name:
+          description: Название статуса
+          maxLength: 50
+          type: string
+    PortInOrderPostRequest:
+      description: Данные для создания новой или изменения заявки на портацию мобильного
+        номера клиента в сеть оператора-реципиента из сети опреатора-донора
+      required:
+      - portationNumbers
+      - contract
+      - dueDate
+      type: object
+      properties:
+        source:
+          description: "Источник создания заявки, сообщенный при ее создании. Если\
+            \ в заголовке передан x-caller, то поле заполнять нет необходимости, о\
+            но будет сохранено значеним x-caller"
+          maxLength: 50
+          type: string
+        dueDate:
+          format: date-time
+          description: Запланированная дата переноса номера. Дата-время в ISO-8601
+          type: string
+        comment:
+          description: Текстовый комментарий
+          maxLength: 255
+          type: string
+        portationNumbers:
+          description: "Список портируемых номеров в заявке. Каждый портируемый но\
+            мер связан с аккаунтом в Telco, указывающим на сим карту и временный н\
+            омер"
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+        donor:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора-донора, включая регион нахождения номера"
+        recipient:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора реципиента, включая регион портации"
+        person:
+          $ref: '#/components/schemas/Person'
+          description: Данные клиента физ. лица
+        company:
+          $ref: '#/components/schemas/Company'
+          description: Данные клиента юр. лица
+        government:
+          $ref: '#/components/schemas/Government'
+          description: "Данные клиента, правительственной организации"
+        contract:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: Данные заявления на портацию
+        individual:
+          $ref: '#/components/schemas/Individual'
+          description: Данные клиента ИП
+        processType:
+          description: |-
+            Тип процесса переноса номера:
+            ShortTimePort - Процесс, предусматривающий сроки этапов портации для физ. лица. Может применяться как для физ. лиц, так и для ИП и юр. лиц с ограничением епо количеству номеров в одной заявке.
+            LongTimePort - Процесс, предусматривающий сроки этапов портации для юр лиц. Может применяться для юр лиц.
+            GOS - Процесс, предусматривающий сроки этапов портации для гос. контрактов. Может применяться только для гос. контрактов
+          default: ShortTimePort
+          enum:
+          - ShortTimePort
+          - LongTimePort
+          - GOS
+          type: string
+    PortInOrderResponse:
+      description: Заявка на портацию мобильного номера клиента в сеть оператора-реципиента
+        из сети опреатора-донора
+      required:
+      - id
+      - state
+      type: object
+      properties:
+        id:
+          description: "Идентификатор заказа. Уникальный для всех заявок MNP HUB\r\
+            \n\r\nГенерируется при создании новой заявки PortIn"
+          maxLength: 45
+          minLength: 1
+          type: string
+          example: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+        source:
+          description: "Источник создания заявки, сообщенный при ее создании"
+          maxLength: 50
+          type: string
+          example: EP
+        dueDate:
+          format: date-time
+          description: Запланированная дата переноса номера. Дата-время в ISO-8601
+          type: string
+          example: 2025-03-15T12:00:00.000Z
+        comment:
+          description: Текстовый комментарий
+          maxLength: 255
+          type: string
+        portationNumbers:
+          description: "Список портируемых номеров в заявке. Каждый портируемый но\
+            мер связан с аккаунтом в Telco, указывающим на сим карту и временный н\
+            омер"
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+        donor:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора-донора, включая регион нахождения номера"
+        recipient:
+          $ref: '#/components/schemas/Operator'
+          description: "Данные оператора реципиента, включая регион портации"
+        person:
+          $ref: '#/components/schemas/Person'
+          description: Данные клиента физ. лица
+        company:
+          $ref: '#/components/schemas/Company'
+          description: Данные клиента юр. лица
+        government:
+          $ref: '#/components/schemas/Government'
+          description: "Данные клиента, правительственной организации"
+        contract:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: Данные заявления на портацию
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: Состояние заявки
+        cdbProcessId:
+          $ref: '#/components/schemas/CdbProcessId'
+          description: Идентификатор процесса в ЦБДПН
+          example: "1000000080429769"
+        individual:
+          $ref: '#/components/schemas/Individual'
+          description: Данные клиента ИП
+        processType:
+          description: |-
+            Тип процесса переноса номера:
+            ShortTimePort - Процесс, предусматривающий сроки этапов портации для физ. лица. Может применяться как для физ. лиц, так и для ИП и юр. лиц с ограничением епо количеству номеров в одной заявке.
+            LongTimePort - Процесс, предусматривающий сроки этапов портации для юр лиц. Может применяться для юр лиц.
+            GOS - Процесс, предусматривающий сроки этапов портации для гос. контрактов. Может применяться только для гос. контрактов
+          default: ShortTimePort
+          enum:
+          - ShortTimePort
+          - LongTimePort
+          - GOS
+          type: string
+    ErrorResponse:
+      description: Информация об ошибке обработки запроса
+      type: object
+      properties:
+        code:
+          description: код ошибки
+          maxLength: 50
+          type: string
+        message:
+          description: сообщение об ошибке
+          maxLength: 255
+          type: string
+    MnpCommand:
+      description: Событие управления проессом MNP
+      type: object
+      properties:
+        command:
+          description: Тип сообщения
+          maxLength: 125
+          type: string
+        commandData:
+          description: JSON c атрибутами команды
+          maxLength: 2000
+          type: string
+        order:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: Ссылка на заявку MNP
+        commandDate:
+          format: date-time
+          description: Дта и время команды
+          type: string
+        id:
+          description: GUID уникальный идентификтаор сообщения
+          maxLength: 50
+          type: string
+        newState:
+          $ref: '#/components/schemas/OrderState'
+          description: Новый статус процесса MNP
+        newPortNumbersState:
+          description: Новый статус для каждого портируемого номера
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+    MnpOrderRef:
+      description: Ссылка на заявку PortInOrder
+      type: object
+      properties:
+        id:
+          description: "Идентификатор заявки переноса номера. \r\nУникальность обе\
+            спечивается парой id и orderType"
+          maxLength: 45
+          type: string
+          example: pin345678654
+        orderType:
+          description: |-
+            Тип заявки MNP
+            для portIn это PortInOrder
+          maxLength: 50
+          type: string
+          example: PortInOrder
+    MnpEventPortIn:
+      description: "Доменное событие, уведомляющее об изменении статуса процесса PortIn\
+        \ в течении его жизенного цикла"
+      required:
+      - id
+      - source
+      - data
+      - date
+      - eventType
+      - processType
+      type: object
+      properties:
+        id:
+          description: Идентификатор события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+        source:
+          description: Источник события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: MNP HUB
+        eventType:
+          description: Тип события - точка ЖЦ процесса или характер изменения процесса
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: NP Create
+        processType:
+          description: Тип процесса
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: PortIn
+        date:
+          format: date-time
+          description: Дата события
+          type: string
+          example: 2025-04-16T12:34:56.000Z
+        data:
+          $ref: '#/components/schemas/MnpEventPortinData'
+          description: Данные события
+    MnpEventPortinData:
+      description: Данные уведомления об изменении статсуа заявки переноса номера
+        PortInOrder
+      type: object
+      properties:
+        orderId:
+          description: Идентификатор заявки MnpPortInOrder
+          maxLength: 45
+          type: string
+        orderState:
+          $ref: '#/components/schemas/OrderState'
+          description: Статус заявки
+        portationNumbers:
+          description: Список портируемых номеров со статусом
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+        dueDate:
+          format: date-time
+          description: Дата портации
+          type: string
+    MnpMessage:
+      description: Сообщение процессов MNP
+      type: object
+      properties:
+        messageType:
+          $ref: '#/components/schemas/MnpMessageType'
+          description: Тип сообщения
+        message:
+          description: "XML сообщение в формате ЦБДПН без шифрования.\nЕсли в XML\
+            \ сообщении присутствует поле EncSubData, то оно будет зашифровано клю\
+            чом опрератора донора при отправке в ЦБДПН,  будет заполнен в поле PublicKeyMD5Hash.\
+            \ \nЕсли в XML сообщении присутствует поле EncSubDataCDB, то оно будет\
+            \ зашифровано ключом опрератора донора при отправке в ЦБДПН,  будет за\
+            полнен в поле PublicKeyMD5HashCDB."
+          maxLength: 2000
+          type: string
+        operator:
+          $ref: '#/components/schemas/Operator'
+          description: |-
+            Оператор, кому предназначено сообщение или от которого получено сообщение
+            Обязательно при исходящем сообщении, требующим шифрования
+        attachUrl:
+          description: |-
+            Путь к файлу вложения.
+            Файл должен быть один. Если требуется приложить несколько файлов, они должны быть заархивированы в один.
+            Если значение указано при исходящем сообщении, то файл будет зашифрован и передан в ЦБДПН вместе с сообщением.
+          maxLength: 255
+          type: string
+        orderId:
+          description: Идентификатор заявки MNP
+          maxLength: 45
+          type: string
+        processType:
+          $ref: '#/components/schemas/MnpProcessType'
+          description: Тип процесса MNP
+        cdbProcessId:
+          $ref: '#/components/schemas/CdbProcessId'
+          description: Идентификатор процесса ЦБДПН
+        messageDate:
+          format: date-time
+          description: Дта и время сообщения
+          type: string
+        id:
+          description: GUID уникальный идентификтаор сообщения
+          maxLength: 50
+          type: string
+    MnpProcessType:
+      description: Типы процессов MNP
+      enum:
+      - ShortTimePort
+      - LongTimePort
+      - Return
+      - Suspend
+      - Tech
+      - GOS
+      - Reverse
+      - Tech24
+      - RouteUpdate
+      - ""
+      type: string
+    MnpMessageType:
+      description: Типы сообщений MNP
+      maxLength: 50
+      type: string
+      example: NP Create
+    DueDateOrderRequest:
+      description: Запрос для заявки на изменение даты переноса
+      required:
+      - dueDate
+      type: object
+      properties:
+        dueDate:
+          format: date-time
+          description: Новая дата переноса
+          type: string
+        portInOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: "Ссылка на родительскую заявку PortInOrder опционально. Исп\
+            ользуется в запросах, где нет id родительской заявки в пути"
+        dueDateRequest:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: Cсылка в системе докуменообороа на документ подписанного заявления
+            изменения даты переноса и url к нему. Содержит дату подписания
+          example: ""
+    DueDateOrderResponse:
+      description: Ответный список заявок на изменение даты переноса
+      type: array
+      items:
+        $ref: '#/components/schemas/DueDateOrder'
+    PortInCancelOrder:
+      description: Заявка на отмену процесса переноса PortInOrder
+      type: object
+      properties:
+        id:
+          description: "Идентификатор заявки на отмену.\r\nГенерируется при создан\
+            ии новой заявки."
+          maxLength: 45
+          type: string
+          example: ""
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: "Статус заявки запроса отмены. Код статуса может принимать\
+            \ 3 значения: \"cancel-requested\", \"cancel_confirmed\", \"cancel_rejected\""
+          example: ""
+        cancelRequest:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: ссылка в системе докуменообороа на документ подписанного заявления
+            отмены портации и url к нему. Содержит дату подписания
+          example: ""
+        portInOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: Ссылка на отменяемую заявку PortInOrder
+    PortInCancelOrderResponse:
+      description: Ответный список заявок отмены переноса номера
+      type: array
+      items:
+        $ref: '#/components/schemas/PortInCancelOrder'
+    PortInCancelOrderPostRequest:
+      description: Заявка на отмену процесса переноса PortInOrder
+      type: object
+      properties:
+        cancelRequest:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: ссылка в системе докуменообороа на документ подписанного заявления
+            отмены портации и url к нему. Содержит дату подписания
+          example: ""
+        portInOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: "Ссылка на отменяемую заявку PortInOrder опционально, если\
+            \ нет id родительской заявки в параметрах URL"
+    PortInPatchEvent:
+      description: "Доменное событие, уведомляющее об изменении статуса процесса PortIn\
+        \ в течении его жизенного цикла"
+      required:
+      - id
+      - source
+      - data
+      - date
+      - eventType
+      type: object
+      properties:
+        id:
+          description: Идентификатор события
+          maxLength: 45
+          minLength: 1
+          type: string
+          example: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+        source:
+          description: Источник события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: PortIn Change CDB
+        eventType:
+          description: Тип события - точка ЖЦ процесса или характер изменения процесса
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: NP Create
+        date:
+          format: date-time
+          description: Дата события
+          type: string
+          example: 2025-04-16T12:34:56.000Z
+        data:
+          $ref: '#/components/schemas/PortinPatchData'
+          description: Данные события
+    PortinPatchData:
+      description: Данные для изменения статуса заявки переноса номера PortInOrder
+      type: object
+      properties:
+        orderId:
+          description: Идентификатор заявки MnpPortInOrder
+          maxLength: 45
+          type: string
+        orderState:
+          $ref: '#/components/schemas/OrderState'
+          description: Новый статус заявки
+        portationNumbers:
+          description: Список портируемых номеров со статусом
+          type: array
+          items:
+            $ref: '#/components/schemas/PortationNumber'
+        dueDate:
+          format: date-time
+          description: Дата портации
+          type: string
+        cdbProcessId:
+          $ref: '#/components/schemas/CdbProcessId'
+          description: идентификтаор процесса БДПН
+    PortInCancelPatchEvent:
+      description: Сообщение для изменения статуса заявки отмены номера
+      required:
+      - id
+      - source
+      - data
+      - date
+      - eventType
+      type: object
+      properties:
+        id:
+          description: Идентификатор события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+        source:
+          description: Источник события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: PortIn Change CDB
+        eventType:
+          description: Тип события - точка ЖЦ процесса или характер изменения процесса
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: NP Create
+        date:
+          format: date-time
+          description: Дата события
+          type: string
+          example: 2025-04-16T12:34:56.000Z
+        data:
+          $ref: '#/components/schemas/PortinCancelPatchData'
+          description: Данные события
+    PortinCancelPatchData:
+      description: Данные для изменения статуса заявки отмены переноса номера
+      required:
+      - cancelOrder
+      type: object
+      properties:
+        cancelOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: Идентификатор заявки PortInCancelOrder
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: Новый статус заявки
+    EncSubData:
+      description: JSON персональных данных
+      required:
+      - Type
+      - Docs
+      type: object
+      properties:
+        Type:
+          description: |-
+            физическое лицо “Person”
+            индивидуальный предприниматель "Individual”
+            юридическое лицо “Company”
+            государственное юридическое лицо “Government”
+          enum:
+          - Person
+          - Individual
+          - Company
+          - Government
+          type: string
+        LN:
+          description: Фамилия
+          maxLength: 50
+          type: string
+        FN:
+          description: Имя
+          maxLength: 50
+          type: string
+        PN:
+          description: Отчество
+          type: string
+        Docs:
+          description: "Прикрепляемые документы\r\n"
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/EncSubDataDocs'
+        Numbers:
+          description: "Список абонентских номеров,\r\nассоциированных с текущим о\
+            бъектом\r\nперсональных данных"
+          type: array
+          items:
+            type: string
+        TIN:
+          description: Номер налогоплательщика
+          type: string
+        NAME:
+          description: Наименование компании
+          maxLength: 125
+          type: string
+        AuthorizedPerson:
+          $ref: '#/components/schemas/EncSubDataAuthPerson'
+          description: Представитель юридического лица
+        TENDERID:
+          description: Идентификатор конкурса
+          type: string
+        TRAIDINGFLOOR:
+          description: Наименование торговой площадки
+          type: string
+        CONTRDUEDATE:
+          format: date
+          description: Контрактное время переноса DD-MM-YYYY
+          type: string
+    EncSubDataDocs:
+      description: Удостоверяющие документы
+      required:
+      - IDDN
+      type: object
+      properties:
+        Type:
+          description: "Тип документа (CPassport, DLicense, Other)"
+          type: string
+        IDNAME:
+          description: Наименование удостоверяющего документа в объекте Doc с указанием
+            страны происхождения
+          type: string
+        IDDS:
+          description: Серия идентифицирующего документа
+          type: string
+        IDDN:
+          description: Номер идентифицирующего документа
+          minLength: 1
+          type: string
+        FOLDER:
+          description: Директория хранения документа
+          type: string
+    EncSubDataAuthPerson:
+      description: JSON персональных данных
+      type: object
+      properties:
+        LN:
+          description: Фамилия
+          type: string
+        FN:
+          description: Имя
+          type: string
+        PN:
+          description: Отчество
+          type: string
+        POSITION:
+          description: Должность
+          type: string
+    DueDateOrder:
+      description: Подзаявка с запросом изменения даты переноса номера по желанию
+        клиента
+      type: object
+      properties:
+        id:
+          description: идентификатор подзаявки
+          maxLength: 45
+          type: string
+        dueDate:
+          format: date-time
+          description: новая дата переноса номера
+          type: string
+        portInOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: ссылка на родительскую заявку переноса номера
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: статус заявки на изменение даты
+        dueDateRequest:
+          $ref: '#/components/schemas/MnpDocumentRef'
+          description: ссылка в системе докуменообороа на документ подписанного заявления
+            изменения даты переноса и url к нему. Содержит дату подписания
+          example: ""
+    DueDatePatchEvent:
+      description: "Доменное событие, уведомляющее об изменении статуса процесса PortIn\
+        \ в течении его жизенного цикла"
+      required:
+      - id
+      - source
+      - data
+      - date
+      - eventType
+      type: object
+      properties:
+        id:
+          description: Идентификатор события
+          maxLength: 45
+          minLength: 1
+          type: string
+          example: c8fd769e-7a86-4b38-9959-4ba64ef5b8b8
+        source:
+          description: Источник события
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: PortIn Change CDB
+        eventType:
+          description: Тип события - точка ЖЦ процесса или характер изменения процесса
+          maxLength: 50
+          minLength: 1
+          type: string
+          example: NP Create
+        date:
+          format: date-time
+          description: Дата события
+          type: string
+          example: 2025-04-16T12:34:56.000Z
+        data:
+          $ref: '#/components/schemas/DueDatePatchData'
+          description: Данные события
+    DueDatePatchData:
+      description: Данные для изменения заявки изменения даты переноса
+      required:
+      - dueDateOrder
+      type: object
+      properties:
+        dueDateOrder:
+          $ref: '#/components/schemas/MnpOrderRef'
+          description: Идентификатор заявки DueDateOrder
+        state:
+          $ref: '#/components/schemas/OrderState'
+          description: Новый статус заявки
+        dueDate:
+          format: date-time
+          description: Дата портации
+          type: string
+    CheckDuedateChangeResponse:
+      description: Результат проверки возможности изменить дату переноса
+      type: object
+      properties:
+        statuses:
+          description: Результат валидации
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderState'
+        nextPossibleDueDate:
+          format: date-time
+          description: Следующая возможная дата переноса номера
+          type: string
+    Individual:
+      description: Данные клиента индивидуального предпринимателя
+      required:
+      - idDocuments
+      type: object
+      properties:
+        firstName:
+          description: Имя
+          maxLength: 50
+          type: string
+        lastName:
+          description: Фамилия
+          maxLength: 50
+          type: string
+        middleName:
+          description: Отчество
+          maxLength: 50
+          type: string
+        legalCategory:
+          description: Статус резидент/нерезидент
+          maxLength: 50
+          type: string
+        customer:
+          $ref: '#/components/schemas/PartyRef'
+          description: Сслыка на клиента МТС
+        idDocuments:
+          description: Список идентификационных документов клиента
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/IdDocument'
+        numbers:
+          description: "Список абонентских номеров,\r\nассоциированных с текущим о\
+            бъектом\r\nперсональных данных. Каждый номер –\r\nстрока в формате с к\
+            одом страны 71234567890"
+          type: array
+          items:
+            $ref: '#/components/schemas/Phone'
+        inn:
+          description: Номер налогоплательщика
+          maxLength: 12
+          type: string
+    Phone:
+      description: Номер телефона РФ без разделителей с кодом страны
+      maxLength: 11
+      pattern: "^[7][0-9]{10}$"
+      type: string
+      example: "79012345678"
+    CdbProcessId:
+      description: Идентификатор процесса БДПН 16 цифр
+      maxLength: 16
+      pattern: "^[1-9][0-9]{15}$"
+      type: string
+      example: "1000000001442290"
+tags:
+- name: MNP
+  description: ""
+- name: MNP PortIn
+  description: ""

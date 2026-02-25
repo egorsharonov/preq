@@ -1,0 +1,63 @@
+FROM dockerhub-mirror.services.mts.ru/golang:1.25 AS builder
+
+ARG CI_JOB_TOKEN
+
+ENV GOPROXY="https://nexus.services.mts.ru/repository/go-proxy/"
+ENV GONOPROXY="gitlab.services.mts.ru/*"
+ENV GOSUMDB="sum.golang.org https://nexus.services.mts.ru/repository/go-sum/"
+ENV GONOSUMDB="gitlab.services.mts.ru/*"
+ENV GOTOOLCHAIN="auto"
+ENV GOPATH="/go"
+ENV PATH="${PATH}:/usr/local/go/bin"
+ENV GOOS="linux"
+ENV GOARCH="amd64"
+ENV GO111MODULE="on"
+ENV CGO_ENABLED="0"
+
+ENV NO_PROXY=localhost,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,*.mts.ru,*.mtsit.com,*.mtsit.local,*.mts-corp.ru
+ENV LANGUAGE=C.utf8 LANG=C.utf8 LC_ALL=C.utf8
+
+RUN echo "deb http://nexus.services.mts.ru/repository/debian-bookworm-proxy bookworm main" > /etc/apt/sources.list \
+    && echo "deb http://nexus.services.mts.ru/repository/debian-security bookworm-security main" >> /etc/apt/sources.list \
+    && echo "deb http://nexus.services.mts.ru/repository/debian-bookworm-proxy bookworm-updates main" >> /etc/apt/sources.list
+
+WORKDIR /usr/local/share/ca-certificates
+
+RUN curl -OOOO -XGET http://pki.mts.ru/{root.crt,WinCA.crt,class2rootG2.crt,MTSWinCAG3.crt} \
+    && update-ca-certificates --fresh \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f {root.crt,WinCA.crt,class2rootG2.crt,MTSWinCAG3.crt}
+
+RUN go install github.com/go-task/task/v3/cmd/task@latest
+
+# Install Delve
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+WORKDIR /app
+COPY go.* ./
+RUN  --mount=type=secret,id=ci_job_token,target=/run/secrets/ci_job_token,required=false \
+    echo "machine gitlab.services.mts.ru login gitlab-ci-token password $(cat /run/secrets/ci_job_token 2>/dev/null || echo "${CI_JOB_TOKEN}")" > /root/.netrc; \
+    chmod 600 /root/.netrc; \
+    go mod download; \
+    rm -f /root/.netrc; 
+
+COPY . .
+RUN  --mount=type=secret,id=ci_job_token,target=/run/secrets/ci_job_token,required=false \
+    echo "machine gitlab.services.mts.ru login gitlab-ci-token password $(cat /run/secrets/ci_job_token 2>/dev/null || echo "${CI_JOB_TOKEN}")" > /root/.netrc; \
+    chmod 600 /root/.netrc; \
+    go build -gcflags="all=-N -l" -o bin/portin-requests ./cmd/main.go; \
+    rm -f /root/.netrc; 
+
+FROM registry.services.mts.ru/docker/alpine:3.22
+
+COPY --from=builder /app/db/migrations /app/db/migrations
+COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
+COPY --from=builder /app/bin/portin-requests /app/portin-requests
+
+# HTTP, Delve ports
+EXPOSE 8080 40000
+
+RUN adduser app --disabled-password --gecos "" && chown app /app -R
+USER app
+
+ENTRYPOINT ["dlv"]
